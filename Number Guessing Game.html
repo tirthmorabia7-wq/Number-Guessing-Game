@@ -1,0 +1,218 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Number Guessing Game</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 36px;
+        width: 420px;
+        text-align: center;
+      }
+
+      h1 {
+        color: #7ec8e3;
+        margin-bottom: 10px;
+      }
+
+      .row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      input {
+        flex: 1;
+        padding: 10px;
+        font-size: 16px;
+        text-align: center;
+      }
+
+      button {
+        padding: 10px;
+        cursor: pointer;
+      }
+
+      #hint {
+        margin: 15px;
+        font-size: 18px;
+        font-weight: bold;
+      }
+      .correct {
+        color: #2ecc71;
+      }
+      .too-low {
+        color: orange;
+      }
+      .too-high {
+        color: red;
+      }
+
+      #history {
+        margin-top: 10px;
+        font-size: 13px;
+      }
+
+      .guess-entry {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="card">
+      <h1>🎯 Number Guessing Game</h1>
+
+      <div class="row">
+        <input type="number" id="guessInput" placeholder="Enter number" />
+        <button onclick="Game.guess()" class="guess">Guess</button>
+        <button onclick="Game.reset()">Reset</button>
+      </div>
+
+      <div id="hint"></div>
+      <div id="history"></div>
+      <div id="stats"></div>
+    </div>
+
+    <script>
+      document.getElementById("guessInput").addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          Game.guess();
+        }
+      });
+      const Game = (function () {
+        // 🔒 PRIVATE VARIABLES (closure)
+        let secret;
+        let attempts;
+        let history;
+        let gameOver;
+        let bestScore;
+
+        function generateSecret(min, max) {
+          return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function buildHint(guess, target) {
+          if (guess === target) return "Correct!";
+          if (guess < target) return "Too Low ↑";
+          return "Too High ↓";
+        }
+
+        function validateInput(value) {
+          let num = parseInt(value, 10);
+          if (isNaN(num) || num < 1 || num > 100) return null;
+          return num;
+        }
+
+        // 📝 render history
+        function renderHistory() {
+          let box = document.getElementById("history");
+
+          box.innerHTML = history
+            .map((h) => {
+              return `
+      <div class="guess-entry">
+        <span>#${h.attempt}: ${h.guess}</span>
+        <span>${h.message}</span>
+      </div>`;
+            })
+            .join("");
+        }
+
+        // 📊 stats
+        function renderStats() {
+          let el = document.getElementById("stats");
+          let best = bestScore === Infinity ? "--" : bestScore;
+
+          el.innerHTML = `Attempts: ${attempts} | Best: ${best}`;
+        }
+
+        // 🌍 PUBLIC METHODS
+        return {
+          reset: function () {
+            secret = generateSecret(1, 100);
+            attempts = 0;
+            history = [];
+            gameOver = false;
+
+            if (bestScore === undefined) bestScore = Infinity;
+
+            document.getElementById("guessInput").value = "";
+            document.getElementById("hint").textContent = "";
+
+            renderHistory();
+            renderStats();
+          },
+
+          guess: function () {
+            if (gameOver) return;
+
+            let input = document.getElementById("guessInput").value;
+            let num = validateInput(input);
+
+            let hint = document.getElementById("hint");
+
+            if (num === null) {
+              hint.textContent = "Enter valid number (1-100)";
+              return;
+            }
+
+            attempts++;
+
+            let record = { attempt: attempts, guess: num };
+
+            if (num === secret) {
+              record.message = "Correct!";
+              hint.textContent = `🎉 Correct! Number was ${secret}`;
+              hint.className = "correct";
+              gameOver = true;
+
+              if (attempts < bestScore) bestScore = attempts;
+            } else if (num < secret) {
+              record.message = "Too Low";
+              hint.textContent = buildHint(num, secret);
+              hint.className = "too-low";
+            } else {
+              record.message = "Too High";
+              hint.textContent = buildHint(num, secret);
+              hint.className = "too-high";
+            }
+
+            history.push(record);
+
+            document.getElementById("guessInput").value = "";
+
+            renderHistory();
+            renderStats();
+          },
+        };
+      })(); // 🔥 IIFE executes here
+
+      // 🚀 start game
+      window.onload = function () {
+        Game.reset();
+      };
+    </script>
+  </body>
+</html>
